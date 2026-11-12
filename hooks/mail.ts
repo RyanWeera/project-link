@@ -255,7 +255,7 @@ export const mailbox = (io: Io, root: string, me: Project) => {
       const name = query.trim().toLowerCase()
       // a name with no ASCII letter or digit has a hashed slug: its name picks it
       const named = projects.filter(p => p.name.toLowerCase() === name)
-      if (q === me.slug || (named.length === 0 && name === me.name.toLowerCase())) return `"${query}" is this project. Pick another one.`
+      if (named.length === 0 && (q === me.slug || name === me.name.toLowerCase())) return `"${query}" is this project. Pick another one.`
       const exact = projects.find(p => p.slug === q) ?? (named.length === 1 ? named[0] : undefined)
       if (exact) return exact
       const hits = named.length > 1 ? named : projects.filter(p => q !== '' && p.slug.includes(q))

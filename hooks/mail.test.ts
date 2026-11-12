@@ -83,6 +83,9 @@ describe('finding projects', () => {
     expect(mods.resolve('video site', list)).toEqual(list[0])
     expect(mods.resolve('video', list)).toEqual(list[0])
     expect(mods.resolve('Plugin Lab', list)).toMatch(/is this project/)
+    // another project of the same name is the one meant
+    const twin = { name: 'Plugin Lab', slug: 'plugin-lab-x1' }
+    expect(mods.resolve('Plugin Lab', [...list, twin])).toEqual(twin)
     expect(mods.resolve('school', list)).toMatch(/matches several/)
     expect(mods.resolve('nope', list)).toMatch(/No project called/)
     // a name with no ASCII letter or digit has a hashed slug: the name picks it
