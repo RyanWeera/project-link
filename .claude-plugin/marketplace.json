@@ -1,0 +1,16 @@
+{
+  "name": "project-link",
+  "owner": {
+    "name": "RyanWeera"
+  },
+  "metadata": {
+    "description": "project-link, a Claude Code mod for sending work between projects on one computer and editing earlier messages."
+  },
+  "plugins": [
+    {
+      "name": "project-link",
+      "source": "./",
+      "description": "A Claude Code mod: projects on one computer send work to each other, and you can edit or delete earlier messages so Claude rereads them."
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+# copied session transcripts
+*.jsonl
+.env
+.env.*
+.npmrc
+*.tgz
+.ignore
+
+# types the engine writes beside a loaded mod
+.claude-plugin/types/
+
+# graft's local graph cache
+/graft/
+
+# Local session settings and key files.
+.claude/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+CLAUDE.local.md
+.mcp.json
+.envrc
+*.crt
+*.cer
+
+# build and editor output
+dist/
+coverage/
+*.tsbuildinfo
+.vscode/
+.idea/
+desktop.ini

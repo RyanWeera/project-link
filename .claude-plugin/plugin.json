@@ -1,0 +1,12 @@
+{
+  "name": "project-link",
+  "version": "0.2.0",
+  "description": "Lets Claude Code projects on this computer send work to each other and get the results back, and lets you edit or delete earlier messages so Claude rereads the changed text.",
+  "author": {
+    "name": "RyanWeera",
+    "url": "https://github.com/RyanWeera"
+  },
+  "homepage": "https://github.com/RyanWeera/project-link",
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}
