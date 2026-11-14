@@ -4,7 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Message } from '../types'
 import { register as registerEdit } from './edit'
 import {
-  clip, describeChat, folderName, isSlug, mailbox, needsCompact, oneLine, plain, projectSlug, related, resultPrompt, slug, taskPrompt,
+  clip, describeChat, folderName, isSlug, mailbox, needsCompact, oneLine, plain, projectSlug, related, resultPrompt, seen, slug, taskPrompt,
   type Chat, type Io, type Mailbox, type Project, type Scope,
 } from './mail'
 
@@ -15,6 +15,9 @@ const notSetUp = (p: Project) =>
   `${p.name} has not run project-link yet, so its inbox name is unknown. Open that project once with project-link installed, then send again.`
 
 const pending = atom({ plugin: 'project-link', key: 'pending' } as const, [])
+// the message the View pane shows: kept in state so the pane outlives a module reload
+const viewing = atom({ plugin: 'project-link', key: 'viewing' } as const, null)
+const VIEW = 'project-link-view'
 
 let box: Mailbox | undefined
 let claudeDir = ''
@@ -222,6 +225,13 @@ async function compactIfCold($: EngineInterface, want?: boolean) {
     .then(() => true, () => false)
   // a refused compaction leaves the chat cold
   if (isDone) lastRequest = await $.clock.now()
+}
+
+/** Opens the View pane on m's whole body, cleaned as Claude would get it. Display only: Claude does not read it. */
+function view($: EngineInterface, m: Message) {
+  return update($, viewing, () => m)
+    .then(() => $.ui.open({ id: VIEW, title: m.title, focus: true, closeOnEscape: true }))
+    .catch((err: unknown) => $.ui.toast(`project-link: ${String(err)}`))
 }
 
 function press($: EngineInterface, m: Message, action: Action) {
@@ -623,6 +633,38 @@ export const register: Register = (on, options) => {
     return { text: await box.summary() }
   })
 
+  // /inbox's row: a View button for each message it lists that still waits. The stored row, which Claude reads, keeps only ids.
+  on('ui.render', { component: 'CommandOutput', props: { command: 'inbox' } }, async ($, e, next) => {
+    const row = await next(e)
+    const ids = new Set([...e.props.text.matchAll(/\bid ([a-z0-9-]+)/g)].map(x => x[1]))
+    const list = (await read($, pending)).filter(m => ids.has(m.id))
+    if (list.length === 0) return row
+    const { Box, Button, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        {row}
+        {list.map(m => (
+          <Box key={m.id}>
+            <Button key={`view-${m.id}`} label="View" onPress={() => view($, m)} />
+            <Text wrap="truncate-end"> {headline(m)}{m.title}</Text>
+          </Box>
+        ))}
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: VIEW }, async ($, e) => {
+    const { Box, Text } = $.ui.resolve(e)
+    const m = await read($, viewing)
+    if (m === null) return <Text dimColor>No message to show.</Text>
+    return (
+      <Box flexDirection="column">
+        <Text bold>{headline(m)}{m.title}</Text>
+        <Text>{seen(m.body)}</Text>
+      </Box>
+    )
+  })
+
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const list = await read($, pending)
     const m = list[0]
@@ -652,12 +694,16 @@ export const register: Register = (on, options) => {
             <Button key="start" label="Start" onPress={() => press($, m, 'start')} />
             <Text> </Text>
             <Button key="decline" label="Decline" dimColor onPress={() => press($, m, 'decline')} />
+            <Text> </Text>
+            <Button key="view" label="View" dimColor onPress={() => view($, m)} />
           </Box>
         ) : (
           <Box>
             <Button key="give" label="Give to Claude" onPress={() => press($, m, 'give')} />
             <Text> </Text>
             <Button key="dismiss" label="Dismiss" dimColor onPress={() => press($, m, 'dismiss')} />
+            <Text> </Text>
+            <Button key="view" label="View" dimColor onPress={() => view($, m)} />
           </Box>
         )}
       </Box>

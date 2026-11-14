@@ -19,6 +19,14 @@ const BAND = {
   view: {},
 }
 
+const VIEW_PANE = {
+  plugin: 'project-link',
+  component: 'Pane',
+  requestId: 'project-link-view',
+  surface: 'desktop',
+  props: { title: 'Make thumbnails', isFocused: true, bodyColumns: 100, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
+} as const
+
 const task = (id: string) => ({
   id, kind: 'task', from: 'Video Site', fromSlug: 'video-site',
   to: 'Plugin Lab', toSlug: 'plugin-lab', title: 'Make thumbnails',
@@ -42,6 +50,11 @@ const world = (on: On) => {
   on('tool.register', ($, e) => ({ value: { tool: `mcp__project-link__${e.name}` } }))
   on('command.register', ($, e) => ({ value: { command: e.name } }))
   on('ui.toast', () => ({ value: undefined }))
+  const opened: string[] = []
+  on('ui.open', ($, e) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
   // the engine's own band when the mod has nothing to show
   on('ui.render', () => ({ type: 'Box' as const, children: [] }))
   on('fs.read', ($, e) => ({ value: files.get(norm(e.path)) ?? '' }))
@@ -79,7 +92,7 @@ const world = (on: On) => {
   })
   files.set(`${MAIL}/auto.json`, '{"on":false}')
   current = clock
-  return { files, submitted, chat, compacted, ran, clock, refuse }
+  return { files, submitted, chat, compacted, ran, clock, refuse, opened }
 }
 
 // the latest world's clock: the mod's first poll runs on it just after session.start
@@ -135,6 +148,42 @@ describe('receiving work', () => {
     w.refuse.next = undefined
     await band.press({ key: 'start' })
     expect(w.submitted).toHaveLength(1)
+  })
+})
+
+describe('reading a whole message', () => {
+  test('View in the bar opens a pane with the whole body, cleaned as Claude gets it', async ($, on) => {
+    const w = world(on)
+    const long = 'Step one. '.repeat(30)
+    w.files.set(`${MAIL}/inbox/plugin-lab/t1.json`, JSON.stringify({ ...task('t1'), body: `${long}\r\nLast line\u200B.\x1b` }))
+    await start($)
+    const band = await $.ui.mount({ plugin: 'project-link', surface: 'desktop', component: 'AbovePrompt', props: BAND })
+    expect(JSON.stringify(await band.drawn())).not.toContain('Last line')
+
+    await band.press({ key: 'view' })
+    expect(w.opened).toEqual(['project-link-view'])
+    const pane = await $.ui.mount(VIEW_PANE as never)
+    expect((await pane.find({ type: 'Text', text: /Last line/ }))?.text).toBe(`${long}\nLast line.`)
+    expect((await pane.find({ type: 'Text', text: /^📨/ }))?.text).toBe('📨 Work from Video Site: Make thumbnails')
+    // viewing hands nothing to Claude and leaves the task waiting
+    expect(w.submitted).toHaveLength(0)
+    expect(await band.find({ key: 'start' })).toBeDefined()
+  })
+
+  test('/inbox shows a View button for each waiting message; Claude still reads only ids', async ($, on) => {
+    const w = world(on)
+    w.files.set(`${MAIL}/inbox/plugin-lab/t1.json`, JSON.stringify(task('t1')))
+    w.files.set(`${MAIL}/inbox/plugin-lab/t2.json`, JSON.stringify({ ...task('t2'), title: 'Cut the trailer', body: 'Cut a 30 second trailer.' }))
+    await start($)
+    const { text } = (await $.command.run({ command: 'inbox', args: '' } as never)) as { text: string }
+    expect(text).not.toContain('Cut a 30 second trailer')
+
+    const props = { command: 'inbox', args: '', text, isErrored: false }
+    const row = await $.ui.mount({ plugin: 'project-link', surface: 'desktop', component: 'CommandOutput', props } as never)
+    expect(await row.find({ key: 'view-t1' })).toBeDefined()
+    await row.press({ key: 'view-t2' })
+    const pane = await $.ui.mount(VIEW_PANE as never)
+    expect((await pane.find({ type: 'Text', text: /trailer\.$/ }))?.text).toBe('Cut a 30 second trailer.')
   })
 })
 
