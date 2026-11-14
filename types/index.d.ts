@@ -50,6 +50,6 @@ export type Change = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'project-link': { pending: Message[]; edits: Shaped<Change[]>; historyTick: number }
+    'project-link': { pending: Message[]; viewing: Message | null; edits: Shaped<Change[]>; historyTick: number }
   }
 }

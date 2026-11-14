@@ -113,7 +113,7 @@ export const clip = (text: string, n: number) => text.slice(0, n).replace(/[\uD8
 export const oneLine = (text: string) => clip(plain(text).trim(), LINE_MAX).trimEnd()
 // a body keeps its line breaks (each as \n: a lone \r can draw text over text), but loses what the bar cannot show:
 // invisible characters can carry words the person never saw
-const seen = (text: string) => text.replace(/\r\n?|[\v\f\u0085\u2028\u2029]/g, '\n').replace(/(?![\t\n])[\p{Cc}\p{Cf}\p{Cs}]/gu, '').replace(HIDDEN, '')
+export const seen = (text: string) => text.replace(/\r\n?|[\v\f\u0085\u2028\u2029]/g, '\n').replace(/(?![\t\n])[\p{Cc}\p{Cf}\p{Cs}]/gu, '').replace(HIDDEN, '')
 
 const STATUSES: readonly string[] = ['new', 'started', 'declined', 'done', 'dismissed'] satisfies Status[]
 
