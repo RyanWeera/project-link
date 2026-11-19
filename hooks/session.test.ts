@@ -316,14 +316,15 @@ describe('a cold chat', () => {
   test('a big cold chat of good quality takes the task as is; a small one of low quality compacts', async ($, on) => {
     const w = world(on)
     w.chat.tokens = 120_000
-    w.files.set(QUALITY, '{"score": 85, "resource_health": 85}')
+    // resource_health is the score read; the legacy score beside it is ignored
+    w.files.set(QUALITY, '{"score": 40, "resource_health": 85}')
     w.files.set(`${MAIL}/inbox/plugin-lab/t1.json`, JSON.stringify(task('t1')))
     await start($)
     await press($, 'start')
     expect(w.compacted).toHaveLength(0)
 
     w.chat.tokens = 9_000
-    w.files.set(QUALITY, '{"score": 50}')
+    w.files.set(QUALITY, '{"score": 90, "resource_health": 50}')
     w.files.set(`${MAIL}/inbox/plugin-lab/t2.json`, JSON.stringify(task('t2')))
     await start($)
     await press($, 'start')
