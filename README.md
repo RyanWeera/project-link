@@ -58,7 +58,7 @@ A message from another Claude session waits until the running turn ends, then ge
 
 ### A cold chat is compacted first
 
-When a chat has not called the model for an hour, its prompt cache is cold, and a new message writes the whole chat into the cache again. If that chat is also of low quality, project-link compacts it before the message lands. Low quality means a score under 70, or 50k tokens or more when there is no score. The score comes from the [token-lens](https://github.com/RyanWeera/token-lens) mod if it is installed. Senders see the target chat's state in `list_projects`, and `send_work` and `route_prompt` take `compact: true` or `compact: false` to choose.
+When a chat has not called the model for an hour, its prompt cache is cold, and a new message writes the whole chat into the cache again. If that chat is also of low quality, project-link compacts it before the message lands. Low quality means a score under 70, or 50k tokens or more when there is no score. The score is [Token Optimizer](https://github.com/alexgreensh/token-optimizer)'s resource health for that chat, if Token Optimizer is installed. Senders see the target chat's state in `list_projects`, and `send_work` and `route_prompt` take `compact: true` or `compact: false` to choose.
 
 ### Edit or delete earlier messages
 
@@ -80,7 +80,7 @@ Everything stays on your computer, under `~/.claude/project-link/` (or `$CLAUDE_
 
 The mod deletes none of these files. Delete old ones by hand when you want to.
 
-It reads `~/.claude/projects/` to find the other projects and their latest turns, and `~/.claude/token-lens/` for the quality score.
+It reads `~/.claude/projects/` to find the other projects and their latest turns, and Token Optimizer's `quality-cache-<session>.json` (in `~/.claude/plugins/data/` or `~/.claude/token-optimizer/`) for the quality score.
 
 ## Develop
 

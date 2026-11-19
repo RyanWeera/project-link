@@ -194,18 +194,30 @@ function headline(m: Message) {
   return m.outcome === 'declined' ? `⛔ ${m.from} declined: ` : `✅ ${m.from} finished: `
 }
 
-/** This chat as other sessions see it: cache age, size, and token-lens's quality score. */
+/** This chat as other sessions see it: cache age, size, and Token Optimizer's quality score. */
 async function chat($: EngineInterface): Promise<Chat> {
   const tokens = (await $.session.usage().catch(() => undefined))?.context.tokens ?? null
   let quality: number | null = null
   try {
-    // token-lens writes this file after each answer of the session
-    const id = await $.session.id().catch(() => sid)
-    const q = JSON.parse(await $.fs.read(`${claudeDir}/token-lens/quality-${id}.json`)) as { score?: unknown }
-    const v = q.score
-    if (typeof v === 'number') quality = v
+    // Token Optimizer's quality hook writes quality-cache-<id>.json after each answer, in its plugin
+    // data folder (or the legacy ~/.claude/token-optimizer); the newest copy wins, as its own band reads it
+    const id = (await $.session.id().catch(() => sid)).replace(/[^a-zA-Z0-9_-]/g, '')
+    const data = `${claudeDir}/plugins/data`
+    const plugins = await $.fs.list(data).catch(() => [])
+    const dirs = [...plugins.filter(e => e.name.includes('token-optimizer')).map(e => `${data}/${e.name}/token-optimizer`), `${claudeDir}/token-optimizer`]
+    let newest: { path: string; mtimeMs: number } | null = null
+    for (const dir of dirs) {
+      const file = (await $.fs.list(dir).catch(() => [])).find(e => e.name === `quality-cache-${id}.json`)
+      if (file && (!newest || file.mtimeMs > newest.mtimeMs)) newest = { path: `${dir}/${file.name}`, mtimeMs: file.mtimeMs }
+    }
+    if (id && newest) {
+      // resource health is the score Token Optimizer headlines; older caches have only `score`
+      const q = JSON.parse(await $.fs.read(newest.path)) as { resource_health?: unknown; score?: unknown }
+      const v = typeof q.resource_health === 'number' ? q.resource_health : q.score
+      if (typeof v === 'number' && Number.isFinite(v)) quality = v
+    }
   } catch {
-    // no token-lens score for this session
+    // no Token Optimizer score for this session
   }
   return { lastRequest, tokens, quality }
 }
@@ -409,7 +421,7 @@ async function setUp($: EngineInterface, isInteractive: boolean) {
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
 const COMPACT_HELP =
-  'list_projects shows whether the target chat is cold (its prompt cache expired) and its quality score (token-lens, 0-100). ' +
+  'list_projects shows whether the target chat is cold (its prompt cache expired) and its quality score (Token Optimizer, 0-100). ' +
   'Left to decide, a cold chat with quality under 70 compacts before your message lands; a warm or good one takes it as is. Set compact to choose yourself.'
 const COMPACT_PROP = {
   type: 'boolean',

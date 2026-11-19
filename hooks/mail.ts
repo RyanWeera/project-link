@@ -11,7 +11,7 @@ export type Io = {
 /** isSetUp false: found only as a session folder; it never ran project-link, so its inbox name is a guess */
 export type Project = { name: string; slug: string; lastSeen?: number; dir?: string; isSetUp?: false }
 
-/** A session's chat as other sessions see it: its last model request (0 = unknown), context size, token-lens quality score. */
+/** A session's chat as other sessions see it: its last model request (0 = unknown), context size, Token Optimizer quality score. */
 export type Chat = { lastRequest: number; tokens: number | null; quality: number | null }
 
 const ACTIVE_MS = 3 * 60_000

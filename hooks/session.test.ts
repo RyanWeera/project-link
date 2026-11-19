@@ -307,7 +307,7 @@ describe('a cold chat', () => {
     expect(w.submitted).toHaveLength(1)
   })
 
-  const QUALITY = `${HOME}/.claude/token-lens/quality-test-session.json`
+  const QUALITY = `${HOME}/.claude/plugins/data/token-optimizer-market/token-optimizer/quality-cache-test-session.json`
   const press = async ($: Engine, key: string) => {
     const band = await $.ui.mount({ plugin: 'project-link', surface: 'desktop', component: 'AbovePrompt', props: BAND })
     await band.press({ key })
@@ -316,7 +316,7 @@ describe('a cold chat', () => {
   test('a big cold chat of good quality takes the task as is; a small one of low quality compacts', async ($, on) => {
     const w = world(on)
     w.chat.tokens = 120_000
-    w.files.set(QUALITY, '{"score": 85}')
+    w.files.set(QUALITY, '{"score": 85, "resource_health": 85}')
     w.files.set(`${MAIL}/inbox/plugin-lab/t1.json`, JSON.stringify(task('t1')))
     await start($)
     await press($, 'start')
